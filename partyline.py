@@ -58,6 +58,8 @@ def index():
 def call():
     response = twiml.Response()
     response.say("Welcome to the PARTY LINE.")
+    print "Incoming call:"
+    print flask.request.args
     number = flask.request.args.get('From', None)
     if flask.request.args.get('Direction', None) == "outbound-dial":
         number = flask.request.args.get('To', None)
