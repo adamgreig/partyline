@@ -8,7 +8,7 @@ app = flask.Flask(__name__)
 twilio_client = TwilioRestClient()
 
 def conference_running():
-    return len(twilio_client.conferences.list()) > 0
+    return len(twilio_client.conferences.list(status="active")) > 0
 
 def call_others(initiator):
     twilio_client.calls.create(to="+442033223875", from_="+442033221789",
