@@ -8,10 +8,16 @@ app = flask.Flask(__name__)
 twilio_client = TwilioRestClient()
 
 def conference_running():
-    return len(twilio_client.conferences.list(status="in-progress")) > 0
+    return (
+        len(twilio_client.conferences.list(
+            FriendlyName="selocpartyline", status="in-progress")) +
+        len(twilio_client.conferences.list(
+            FriendlyName="selocpartyline", status="init"))) > 0
 
 def call_others(initiator):
-    twilio_client.calls.create(to="+442033223875", from_="+442033221789",
+    twilio_client.calls.create(
+        to=os.environ['TWILIO_TROLL_NUMBER'],
+        from_=os.environ['TWILIO_FROM_NUMBER'],
         url=None, application_sid="AP92a26b662590492fa99225404e5cb0c7")
 
 @app.route('/')
@@ -20,11 +26,14 @@ def index():
 
 @app.route('/call')
 def call():
-    if not conference_running():
-        #call_others(flask.request.args['From'])
-        call_others("TEST")
     r = twiml.Response()
-    r.say("Welcome to the PARTY LINE. Get ready to PARTY HARD.")
+    r.say("Welcome to the PARTY LINE.")
+    if not conference_running():
+        call_others(flask.request.args['From'])
+        r.say("Phoning the rest of the party. Please wait.")
+    else:
+        r.say("Connecting you to the party. Get ready to PARTY HARD.")
+
     with r.dial() as d:
         d.conference("selocpartyline", muted=False, beep=True,
                 startConferenceOnEnter=True, endConferenceOnExit=False)
