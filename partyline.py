@@ -27,7 +27,7 @@ def call():
     r.say("Welcome to the PARTY LINE. Get ready to PARTY HARD.")
     with r.dial() as d:
         d.conference("selocpartyline", muted=False, beep=True,
-                startConferenceOnEnter=False, endConferenceOnExit=False)
+                startConferenceOnEnter=True, endConferenceOnExit=False)
     resp = flask.make_response(str(r))
     resp.headers['Content-Type'] = 'application/xml'
     return resp
