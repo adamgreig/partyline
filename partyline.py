@@ -59,6 +59,8 @@ def call():
     response = twiml.Response()
     response.say("Welcome to the PARTY LINE.")
     number = flask.request.args.get('From', None)
+    if flask.request.args.get('Direction', None) == "outbound-dial":
+        number = flask.request.args.get('To', None)
     print "Incoming call from {0}".format(number)
     if not mongo_client.party_members.find_one({'number': number}):
         print "Not allowed"
