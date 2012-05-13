@@ -15,7 +15,7 @@ def call():
     resp.headers['Content-Type'] = 'application/xml'
     return resp
 
-@app.rouite('/sms', methods=['POST'])
+@app.route('/sms', methods=['POST'])
 def sms():
     return ""
 
