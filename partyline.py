@@ -1,14 +1,18 @@
 import os
 import flask
-import time
-
-from werkzeug import Headers
 
 from twilio import twiml
 from twilio.rest import TwilioRestClient
 
 app = flask.Flask(__name__)
-twilio = TwilioRestClient()
+twilio_client = TwilioRestClient()
+
+def conference_running():
+    return len(twilio_client.conferences.list()) > 0
+
+def call_others(initiator):
+    twilio_client.calls.create(to="+442033223875", from_="+442033221789",
+       application_sid="AP92a26b662590492fa99225404e5cb0c7")
 
 @app.route('/')
 def index():
@@ -16,19 +20,16 @@ def index():
 
 @app.route('/call')
 def call():
-    def process():
-        yield '<?xml version="1.0" encoding="UTF-8"?><Response>'
-        yield '<Say>Welcome to the PARTY LINE. Please wait...</Say>'
-        time.sleep(15)
-        yield '<Say>Thanks for waiting!</Say></Response>'
-    #r = twiml.Response()
-    #r.say("Welcome to the PARTY LINE. Get ready to PARTY HARD.")
-    #resp = flask.make_response(str(r))
-    #resp.headers['Content-Type'] = 'application/xml'
-    #return resp
-    header = Headers()
-    header.add('Content-Type', 'application/xml')
-    return flask.Response(process(), headers=header, direct_passthrough=True)
+    if not conference_running():
+        call_others(flask.request.args['From'])
+    r = twiml.Response()
+    r.say("Welcome to the PARTY LINE. Get ready to PARTY HARD.")
+    with r.dial as d:
+        d.conference("selocpartyline", muted=False, beep=True,
+                startConferenceOnEnter=False, endConferenceOnExit=False)
+    resp = flask.make_response(str(r))
+    resp.headers['Content-Type'] = 'application/xml'
+    return resp
 
 @app.route('/sms')
 def sms():
