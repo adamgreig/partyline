@@ -10,9 +10,9 @@ twilio_client = TwilioRestClient()
 def conference_running():
     return (
         len(twilio_client.conferences.list(
-            FriendlyName="selocpartyline", status="in-progress")) +
+            friendly_name="selocpartyline", status="in-progress")) +
         len(twilio_client.conferences.list(
-            FriendlyName="selocpartyline", status="init"))) > 0
+            friendly_name="selocpartyline", status="init"))) > 0
 
 def call_others(initiator):
     twilio_client.calls.create(
