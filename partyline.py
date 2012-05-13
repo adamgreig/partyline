@@ -1,7 +1,14 @@
 import os
 import flask
+import time
+
+from werkzeug import Headers
+
+from twilio import twiml
+from twilio.rest import TwilioRestClient
 
 app = flask.Flask(__name__)
+twilio = TwilioRestClient()
 
 @app.route('/')
 def index():
@@ -9,11 +16,19 @@ def index():
 
 @app.route('/call')
 def call():
-    resp = "<Response><Say>Welcome to the PARTY LINE.</Say></Response>"
-    xml = '<?xml version="1.0" encoding="UTF-8"?>' + resp
-    resp = flask.make_response(xml)
-    resp.headers['Content-Type'] = 'application/xml'
-    return resp
+    def process():
+        yield '<?xml version="1.0" encoding="UTF-8"?><Response>'
+        yield '<Say>Welcome to the PARTY LINE. Please wait...</Say>'
+        time.sleep(15)
+        yield '<Say>Thanks for waiting!</Say></Response>'
+    #r = twiml.Response()
+    #r.say("Welcome to the PARTY LINE. Get ready to PARTY HARD.")
+    #resp = flask.make_response(str(r))
+    #resp.headers['Content-Type'] = 'application/xml'
+    #return resp
+    header = Headers()
+    header.add('Content-Type', 'application/xml')
+    return flask.Response(process(), headers=header, direct_passthrough=True)
 
 @app.route('/sms')
 def sms():
