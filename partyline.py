@@ -7,7 +7,7 @@ app = flask.Flask(__name__)
 def index():
     return ""
 
-@app.route('/call', methods=['POST'])
+@app.route('/call')
 def call():
     resp = "<Response><Say>Welcome to the PARTY LINE.</Say></Response>"
     xml = '<?xml version="1.0" encoding="UTF-8"?>' + resp
@@ -15,7 +15,7 @@ def call():
     resp.headers['Content-Type'] = 'application/xml'
     return resp
 
-@app.route('/sms', methods=['POST'])
+@app.route('/sms')
 def sms():
     return ""
 
