@@ -56,7 +56,7 @@ def index():
 def call():
     response = twiml.Response()
     response.say("Welcome to the PARTY LINE.")
-    if redis_client.get('conference_running'):
+    if redis_client.exists('conference_running'):
         response.say("Connecting you to the party. Get ready to PARTY HARD.")
     else:
         redis_client.set('conference_running', True)
@@ -76,7 +76,7 @@ def sms():
 @flask_app.route('/hangup')
 def hangup():
     if not check_conferences_active():
-        redis_client.set('conference_running', False)
+        redis_client.delete('conference_running')
     return "OK"
 
 if __name__ == '__main__':
