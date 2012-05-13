@@ -12,7 +12,7 @@ def conference_running():
 
 def call_others(initiator):
     twilio_client.calls.create(to="+442033223875", from_="+442033221789",
-       application_sid="AP92a26b662590492fa99225404e5cb0c7")
+        url=None, application_sid="AP92a26b662590492fa99225404e5cb0c7")
 
 @app.route('/')
 def index():
@@ -21,10 +21,11 @@ def index():
 @app.route('/call')
 def call():
     if not conference_running():
-        call_others(flask.request.args['From'])
+        #call_others(flask.request.args['From'])
+        call_others("TEST")
     r = twiml.Response()
     r.say("Welcome to the PARTY LINE. Get ready to PARTY HARD.")
-    with r.dial as d:
+    with r.dial() as d:
         d.conference("selocpartyline", muted=False, beep=True,
                 startConferenceOnEnter=False, endConferenceOnExit=False)
     resp = flask.make_response(str(r))
