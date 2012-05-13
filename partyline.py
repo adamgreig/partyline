@@ -33,6 +33,7 @@ mongo_client = setup_mongo()
 twilio_client = TwilioRestClient()
 
 def check_conferences_active():
+    print "Checking for still-active conference"
     return (
         len(twilio_client.conferences.list(
             friendly_name="selocpartyline", status="in-progress")) +
@@ -40,10 +41,14 @@ def check_conferences_active():
             friendly_name="selocpartyline", status="init"))) > 0
 
 def call_others(initiator):
+    print "Calling other party members"
     for member in mongo_client.party_members.find():
-        twilio_client.calls.create(
-            to=member['number'], from_=config('TWILIO_FROM_NUMBER'), url=None,
-            application_sid=config('TWILIO_APP'))
+        print "Considering {0}".format(member['name'])
+        if member['number'] != initiator:
+            print "Phoning {0}".format(member['number'])
+            twilio_client.calls.create(
+                to=member['number'], from_=config('TWILIO_FROM_NUMBER'),
+                url=None, application_sid=config('TWILIO_APP'))
 
 @flask_app.route('/')
 def index():
@@ -54,16 +59,20 @@ def call():
     response = twiml.Response()
     response.say("Welcome to the PARTY LINE.")
     number = flask.request.args.get('From', None)
+    print "Incoming call from {0}".format(number)
     if not mongo_client.party_members.find_one({'number': number}):
+        print "Not allowed"
         response.say("Sorry, only authorised party members may join the party.")
         response.say("Goodbye.")
     else:
         if redis_client.exists('conference_running'):
+            print "Connecting through"
             response.say("Connecting you to the party.")
             response.say("Get ready to PARTY HARD.")
         else:
+            print "Setting up"
             redis_client.set('conference_running', True)
-            call_others(flask.request.args['From'])
+            call_others(number)
             response.say("Phoning the rest of the party.")
             response.say("Prepare to PARTY HARD.")
         with response.dial() as dial:
@@ -79,6 +88,7 @@ def sms():
 
 @flask_app.route('/hangup')
 def hangup():
+    print "Call completed"
     if not check_conferences_active():
         redis_client.delete('conference_running')
     return "OK"
