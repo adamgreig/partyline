@@ -88,12 +88,20 @@ def call():
 def sms():
     return ""
 
-@flask_app.route('/hangup')
-def hangup():
-    print "Call completed"
+def clean_up():
     if not check_conferences_active():
         redis_client.delete('conference_running')
     return "OK"
+
+@flask_app.route('/hangup')
+def hangup():
+    print "Call completed"
+    return clean_up()
+
+@flask_app.route('/cron')
+def cron():
+    print "Cronjob running"
+    return clean_up()
 
 if __name__ == '__main__':
     if os.environ.get('DEBUG', False):
