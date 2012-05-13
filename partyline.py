@@ -27,9 +27,9 @@ def setup_redis():
     return redis.StrictRedis(host=uri.hostname, port=uri.port, db=0,
             password=uri.password)
 
-r = setup_redis()
-db = setup_mongo()
-app = flask.Flask(__name__)
+flask_app = flask.Flask(__name__)
+redis_client = setup_redis()
+mongo_client = setup_mongo()
 twilio_client = TwilioRestClient()
 
 def check_conferences_active():
@@ -48,39 +48,39 @@ def call_others(initiator):
         from_=config('TWILIO_FROM_NUMBER'),
         url=None, application_sid=config('TWILIO_APP'))
 
-@app.route('/')
+@flask_app.route('/')
 def index():
     return ""
 
-@app.route('/call')
+@flask_app.route('/call')
 def call():
-    r = twiml.Response()
-    r.say("Welcome to the PARTY LINE.")
-    if r.get('conference_running'):
-        r.say("Connecting you to the party. Get ready to PARTY HARD.")
+    response = twiml.Response()
+    response.say("Welcome to the PARTY LINE.")
+    if redis_client.get('conference_running'):
+        response.say("Connecting you to the party. Get ready to PARTY HARD.")
     else:
-        r.set('conference_running', True)
+        redis_client.set('conference_running', True)
         call_others(flask.request.args['From'])
-        r.say("Phoning the rest of the party. Please wait.")
-    with r.dial() as d:
-        d.conference("selocpartyline", muted=False, beep=True,
+        response.say("Phoning the rest of the party. Please wait.")
+    with response.dial() as dial:
+        dial.conference("selocpartyline", muted=False, beep=True,
                 startConferenceOnEnter=True, endConferenceOnExit=False)
-    resp = flask.make_response(str(r))
-    resp.headers['Content-Type'] = 'application/xml'
-    return resp
+    response = flask.make_response(str(response))
+    response.headers['Content-Type'] = 'application/xml'
+    return response
 
-@app.route('/sms')
+@flask_app.route('/sms')
 def sms():
     return ""
 
-@app.route('/hangup')
+@flask_app.route('/hangup')
 def hangup():
     if not check_conferences_active():
-        r.set('conference_running', False)
+        redis_client.set('conference_running', False)
     return "OK"
 
 if __name__ == '__main__':
     if os.environ.get('DEBUG', False):
-        app.debug = True
+        flask_app.debug = True
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    flask_app.run(host='0.0.0.0', port=port)
