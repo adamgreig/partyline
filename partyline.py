@@ -48,41 +48,61 @@ def call_others(initiator):
             print "Phoning {0}".format(member['number'])
             twilio_client.calls.create(
                 to=member['number'], from_=config('TWILIO_FROM_NUMBER'),
-                url=None, application_sid=config('TWILIO_APP'))
+                url=None, application_sid=config('TWILIO_APP'),
+                if_machine='Continue')
 
 @flask_app.route('/')
 def index():
-    return ""
+    return "THE PARTY LINE. For party members only."
+
+def make_response(resp):
+    response=flask.make_response(str(resp))
+    response.headers['Content-Type'] = 'application/xml'
+    return response
 
 @flask_app.route('/call')
 def call():
     response = twiml.Response()
     response.say("Welcome to the PARTY LINE.")
-    number = flask.request.args.get('From', None)
+
     if flask.request.args.get('Direction', None) == "outbound-api":
         number = flask.request.args.get('To', None)
-    print "Incoming call from {0}".format(number)
-    if not mongo_client.party_members.find_one({'number': number}):
-        print "Not allowed"
-        response.say("Sorry, only authorised party members may join the party.")
-        response.say("Goodbye.")
     else:
-        if redis_client.exists('conference_running'):
-            print "Connecting through"
-            response.say("Connecting you to the party.")
-            response.say("Get ready to PARTY HARD.")
-        else:
-            print "Setting up"
-            redis_client.set('conference_running', True)
-            call_others(number)
-            response.say("Phoning the rest of the party.")
-            response.say("Prepare to PARTY HARD.")
-        with response.dial() as dial:
-            dial.conference("selocpartyline", muted=False, beep=True,
-                    startConferenceOnEnter=True, endConferenceOnExit=False)
-    response = flask.make_response(str(response))
-    response.headers['Content-Type'] = 'application/xml'
-    return response
+        number = flask.request.args.get('From', None)
+    print "Incoming call from {0}".format(number)
+
+    party_member = mongo_client.party_members.find_one({'number': number})
+
+    if not party_member:
+        print "Not allowed from {0}".format(number)
+        response.say("Sorry, only authorised party members may join the party,"
+                     "goodbye.")
+        return make_response(response)
+
+    party_starter = redis_client.get('conference_starter')
+
+    if flask.request.args.get('AnsweredBy', None) == "machine":
+        response.say(
+            "Sorry {0}, {1} started a party but you missed it!".format(
+                party_member['name'], party_starter))
+        return make_response(response)
+
+    if redis_client.exists('conference_running'):
+        print "Connecting through"
+        response.say("Hi {0}, {1} has started a party! Connecting you through,"
+                     "get ready to PARTY HARD.".format(party_member['name'],
+                                                       party_starter))
+    else:
+        print "Setting up"
+        redis_client.set('conference_running', True)
+        redis_client.set('conference_starter', party_member['name'])
+        call_others(number)
+        response.say("Hi {0}, now phoning the rest of the party, "
+                     "prepare to PARTY HARD.".format(party_member['name']))
+    with response.dial() as dial:
+        dial.conference("selocpartyline", muted=False, beep=True,
+                startConferenceOnEnter=True, endConferenceOnExit=False)
+    return make_response(response)
 
 @flask_app.route('/sms')
 def sms():
