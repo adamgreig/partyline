@@ -128,6 +128,7 @@ def sms():
             print "Forwarding to {0} ({1})".format(member['name'],
                 member['number'])
             send_text(member['number'], msg)
+    return "OK"
 
 def clean_up():
     if not check_conferences_active():
