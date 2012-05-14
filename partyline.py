@@ -104,9 +104,30 @@ def call():
                 startConferenceOnEnter=True, endConferenceOnExit=False)
     return make_response(response)
 
+def send_text(number, message):
+    twilio_client.sms.messages.create(to=number,
+        from_=config('TWILIO_FROM_NUMBER'), body=message)
+
 @flask_app.route('/sms')
 def sms():
-    return ""
+    number = flask.request.args['From']
+    message = flask.request.args['Body']
+    print "Received SMS from {0}: {1}".format(number, message)
+    party_member = mongo_client.party_members.find_one({'number': number})
+    if not party_member:
+        print "Not a party member, dropping"
+        return ""
+    if len(message) > 140:
+        print "Too long, rejecting"
+        msg = "Message too long. Keep it under 140 chars. NO PARTY 4 U"
+        send_text(number, msg)
+    else:
+        print "Forwarding."
+        msg = "PARTYMSG: {0}".format(message)
+        for member in mongo_client.party_members.find():
+            print "Forwarding to {0} ({1})".format(member['name'],
+                member['number'])
+            send_text(member['number'], msg)
 
 def clean_up():
     if not check_conferences_active():
