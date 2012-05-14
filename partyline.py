@@ -125,7 +125,7 @@ def sms():
         send_text(number, msg)
     else:
         print "Forwarding."
-        msg = "PARTYMSG FROM {0}: {1}".format(party_member['name'], message)
+        msg = "PARTYMSG from {0}: {1}".format(party_member['name'], message)
         for member in mongo_client.party_members.find():
             print "Forwarding to {0} ({1})".format(member['name'],
                 member['number'])
