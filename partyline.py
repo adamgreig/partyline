@@ -116,6 +116,8 @@ def sms():
     party_member = mongo_client.party_members.find_one({'number': number})
     if not party_member:
         print "Not a party member, dropping"
+        msg = "Sorry, only authorised party members can text the PARTY LINE."
+        send_text(number, msg)
         return ""
     if len(message) > 140:
         print "Too long, rejecting"
